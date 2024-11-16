@@ -1,0 +1,43 @@
+import requests
+from bs4 import BeautifulSoup
+
+def findTotalArticlesByLanguages(languages):
+    # URL of the Wikimedia table page
+    url = "https://meta.wikimedia.org/wiki/List_of_Wikipedias/Table"
+    
+    # Fetch the page content
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    
+    # Locate the table with the required data
+    table = soup.find("table", {"class": "wikitable sortable sortable jquery-tablesorter"})
+    if not table:
+        print("Table not found on the webpage.")
+        return 0
+
+    total_articles = 0
+    
+    # Process each row in the table
+    rows = table.find_all("tr")[1:]  # Skip the header row
+    for row in rows:
+        cells = row.find_all("td")
+        if len(cells) < 3:  # Ensure there are enough columns
+            continue
+
+        # Extract the language name and number of articles
+        language = cells[0].get_text(strip=True)
+        if language in languages:
+            try:
+                # Parse the articles count, removing commas
+                articles = int(cells[2].get_text(strip=True).replace(",", ""))
+                total_articles += articles
+            except ValueError:
+                # Skip rows with invalid article counts
+                continue
+
+    return total_articles
+
+# Example usage
+languages = ["English", "German"]
+total = findTotalArticlesByLanguages(languages)
+print(f"Total articles for {languages}: {total}")
